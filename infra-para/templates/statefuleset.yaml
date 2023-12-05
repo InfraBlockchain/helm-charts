@@ -1,0 +1,230 @@
+{{- $releaseName := .Release.Name}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}
+  labels: 
+    {{- include "infra-para.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "infra-para.selectorLabels" . | nindent 6 }}
+  # select headless service
+  serviceName: {{.Release.Name }}-headeless
+  # update strategy
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate
+  # spec
+  replicas: 1 # by default is 1
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "infra-para.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "infra-para.serviceAccountName" . }}
+      securityContext:
+        fsGroup: 1000
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      initContainers:
+        - name: download-relay-spec
+          image: curlimages/curl:8.1.2
+          command:
+            [
+              "curl",
+              "-L",
+              {{.Values.node.relay.spec.url | quote}},
+              "-o",
+              "/tmp/raw-local-chainspec.json",
+            ]
+          volumeMounts:
+            - name: chain-spec
+              mountPath: /tmp
+        - name: download-did-spec
+          image: curlimages/curl:8.1.2
+          command:
+            [
+              "curl",
+              "-L",
+              {{.Values.node.spec.url | quote}},
+              "-o",
+              "/tmp/raw-parachain-chainspec.json",
+            ]
+          volumeMounts:
+            - name: chain-spec
+              mountPath: /tmp
+        {{- if ne (len .Values.node.keys) 0}}
+        - name: inject-keys
+          image: "{{ .Values.image.repository}}:{{.Values.image.tag}}"
+          command: ["/bin/bash"]
+          args:
+            - -c
+            - |
+              set -eu
+              {{- range $key := .Values.node.keys}}
+              if [ ! -f/var/run/secrets/{{$key.type}}/type ]; then
+                echo "Error: File/var/run/secrets/{{$key.type}}/type does not exist"
+                exit 1
+              fi
+              /usr/local/bin/infrablockspace key insert \
+              --keystore-path /keystore \
+              --key-type $(cat /var/run/secrets/{{$key.type}}/type) \
+              --scheme $(cat /var/run/secrets/{{$key.type}}/scheme) \
+              --suri /var/run/secrets/{{$key.type}}/seed \
+              && echo "Inserted key into Keystore" \
+              || echo "Failed to insert key into Keystore."
+              {{end }}
+          resources:
+          volumeMounts:
+            - mountPath: /keystore
+              name: chain-keystore
+            {{- range $key := .Values.node.keys}}
+            - mountPath: /var/run/secrets/{{$key.type}}
+              name: {{$key.type}}
+            {{- end }}
+        {{- end}}
+      containers:
+        - name: para-chain
+          image: "{{ .Values.image.repository}}:{{.Values.image.tag}}"
+          imagePullPolicy: {{.Values.image.pullPolicy}}
+          args:
+            [
+              "--keystore-path=/keystore",
+              "--collator",
+              "--base-path",
+              "/data/para",
+              "--chain",
+              "/tmp/raw-parachain-chainspec.json",
+              "--prometheus-external",
+              "--prometheus-port=9615",
+              "--unsafe-rpc-external",
+              "--rpc-cors",
+              "all",
+              "--rpc-max-connections=16000",
+              {{- if eq .Values.node.boot.enable false}}
+              "--bootnodes",
+              {{- range $url := .Values.node.bootnodes}}
+              "{{$url }}",
+              {{- end}}
+              {{- end}}
+              "--",
+              "--execution",
+              "wasm",
+              "--chain",
+              "/tmp/raw-local-chainspec.json",
+              "--base-path",
+              "/data/relay",
+              "--unsafe-rpc-external",
+              "--bootnodes",
+              {{- range $url := .Values.node.relay.bootnodes}}
+              "{{$url }}",
+              {{- end}}
+            ]
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: chain-spec
+              mountPath: /tmp
+            - name: chain-keystore
+              mountPath: /keystore
+            - name: para-data
+              mountPath: /data/para
+            - name: relay-data
+              mountPath: /data/relay
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: chain-spec
+          emptyDir: {}
+        - name: chain-keystore
+          emptyDir: {}
+        {{- if ne .Values.node.chainData.enabled false}}
+        - name: para-data
+          persistentVolumeClaim:
+            claimName: {{ .Values.node.chainData.name }}
+        {{- end }}
+        {{- if ne .Values.node.relay.chainData.enabled false}}
+        - name: relay-data
+          persistentVolumeClaim:
+            claimName: {{ .Values.node.relay.chainData.name }}
+        {{- end }}
+        {{- range $key := .Values.node.keys}}
+        - name: {{ $key.type }}
+          secret:
+            secretName: {{$releaseName}}-{{ $key.type }}
+        {{- end }}
+  {{- if eq .Values.node.chainData.enable true}}
+  volumeClaimTemplates:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: para-data
+        {{- with .Values.node.chainData.annotations }}
+        annotations: {{ toYaml . | nindent 10 }}
+        {{- end }}
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        {{- if or .Values.node.chainData.kubernetesVolumeSnapshot .Values.node.chainData.kubernetesVolumeToClone }}
+        dataSource:
+          {{- if .Values.node.chainData.kubernetesVolumeSnapshot }}
+          name: {{ .Values.node.chainData.kubernetesVolumeSnapshot }}
+          kind: VolumeSnapshot
+          apiGroup: snapshot.storage.k8s.io
+          {{- else }}
+          name: {{ .Values.node.chainData.kubernetesVolumeToClone }}
+          kind: PersistentVolumeClaim
+          {{- end }}
+        {{- end }}
+        storageClassName: {{ .Values.node.chainData.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.node.chainData.volumeSize }}
+      {{- end }}
+  {{- if eq .Values.node.relay.chainData.enable true}} 
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: relay-data
+        {{- with .Values.node.relay.chainData.annotations }}
+        annotations: {{ toYaml . | nindent 10 }}
+        {{- end }}
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        {{- if or .Values.node.relay.chainData.kubernetesVolumeSnapshot .Values.node.relay.chainData.kubernetesVolumeToClone }}
+        dataSource:
+          {{- if .Values.node.relay.chainData.kubernetesVolumeSnapshot }}
+          name: {{ .Values.node.relay.chainData.kubernetesVolumeSnapshot }}
+          kind: VolumeSnapshot
+          apiGroup: snapshot.storage.k8s.io
+          {{- else }}
+          name: {{ .Values.node.relay.chainData.kubernetesVolumeToClone }}
+          kind: PersistentVolumeClaim
+          {{- end }}
+        {{- end }}
+        storageClassName: {{ .Values.node.relay.chainData.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.node.relay.chainData.volumeSize }}
+      {{- end }}
