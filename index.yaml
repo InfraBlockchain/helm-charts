@@ -1,6 +1,35 @@
 apiVersion: v1
 entries:
+  infra-para:
+    - apiVersion: v2
+      appVersion: 1.16.0
+      created: "2023-12-05T16:05:09.448994+09:00"
+      description: A Helm chart for Kubernetes
+      digest: a055e7fcc8c77c938b556ffb1f7cae690b3483eef56ee77ccccbba9b0c77994f
+      maintainers:
+        - email: devops@bc-labs.net
+          name: InfraBlockchain
+          url: https://github.com/InfraBlockchain/helm-charts
+      name: infra-para
+      type: application
+      urls:
+        - https://github.com/InfraBlockchain/helm-charts/releases/download/infra-para-0.1.0/infra-para-0.1.0.tgz
+      version: 0.1.0
   infrablockspace:
+    - apiVersion: v2
+      appVersion: 1.16.0
+      created: "2023-12-05T16:05:09.451422+09:00"
+      description: A Helm chart for Kubernetes
+      digest: 1b01559a64bae0592d644445c538a764abedb59275351f09ded2c5ba8a12e8fd
+      maintainers:
+        - email: devops@bc-labs.net
+          name: InfraBlockchain
+          url: https://github.com/InfraBlockchain/helm-charts
+      name: infrablockspace
+      type: application
+      urls:
+        - https://github.com/InfraBlockchain/helm-charts/releases/download/infrablockspace-0.1.1/infrablockspace-0.1.1.tgz
+      version: 0.1.1
     - apiVersion: v2
       appVersion: 1.16.0
       created: "2023-12-05T10:53:53.00299+09:00"
@@ -15,4 +44,4 @@ entries:
       urls:
         - https://github.com/InfraBlockchain/helm-charts/releases/download/0.1.0/infrablockspace-0.1.0.tgz
       version: 0.1.0
-generated: "2023-12-05T10:53:53.002187+09:00"
+generated: "2023-12-05T16:05:09.447885+09:00"
