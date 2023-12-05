@@ -1,11 +1,12 @@
-# Default values for infrablockspace.
+# Default values for infra-para.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-tag: 3
-
-imagePullSecrets: []
-terminationGracePeriodSeconds: 10
+image:
+  repository: public.ecr.aws/v8x3j0k5/infra-para # if you want to evm, use this image -  public.ecr.aws/v8x3j0k5/infra-evm
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -17,28 +18,7 @@ serviceAccount:
   name: ""
 
 podAnnotations: {}
-
-node:
-  spec:
-    url: "https://chain-spec.infrablockspace.net/stage/raw-relay-chainspec.json"
-
-  keys:
-    []
-    # - type: babe
-    #   scheme: ed25519
-    #   seed: 1
-
-  boot:
-    enable: true
-    urls: []
-  chainData:
-    enable: true
-    name: ""
-    volumeSize: 100Gi
-    kubernetesVolumeSnapshot:
-    kubernetesVolumeToClone:
-    storageClass: ""
-
+terminationGracePeriodSeconds: 10
 service:
   type: ClusterIP
   port:
@@ -74,8 +54,32 @@ resources:
   # requests:
   #   cpu: 100m
   #   memory: 128Mi
+node:
+  boot:
+    enable: true
+  bootnodes: []
+  spec:
+    url: ""
+  keys: []
+  chainData:
+    enable: true
+    volumeSize: 100Gi
+    storageClass: ""
+    kubernetesVolumeSnapshot:
+    kubernetesVolumeToClone:
+  relay:
+    spec:
+      url: ""
+    bootnodes: []
+    chainData:
+      enable: true
+      storageClass: ""
+      volumeSize: 100Gi
+      kubernetesVolumeSnapshot:
+      kubernetesVolumeToClone:
 
 nodeSelector: {}
 
-tolerations: {}
+tolerations: []
+
 affinity: {}
