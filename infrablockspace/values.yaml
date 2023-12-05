@@ -77,8 +77,5 @@ resources:
 
 nodeSelector: {}
 
-tolerations:
-  - key: "node.kubernetes.io/role"
-    operator: "Exists"
-    effect: "NoSchedule"
+tolerations: {}
 affinity: {}
