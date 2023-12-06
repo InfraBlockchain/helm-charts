@@ -57,6 +57,7 @@ resources:
 node:
   boot:
     enable: true
+  archive: false
   bootnodes: []
   spec:
     url: ""
