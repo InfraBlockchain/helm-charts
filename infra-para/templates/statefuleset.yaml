@@ -101,6 +101,9 @@ spec:
               "--keystore-path=/keystore",
               "--collator",
               "--base-path",
+              {{- if eq .Values.node.archive true}}
+               "--pruning=archive",
+              {{- end}}
               "/data/para",
               "--chain",
               "/tmp/raw-parachain-chainspec.json",
