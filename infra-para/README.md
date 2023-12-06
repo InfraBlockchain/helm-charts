@@ -31,6 +31,7 @@ helm install infra-para infrablockchain/infra-para
 | ingress.hosts | list | `[{"host":"chart-example.local","paths":[{"path":"/","pathType":"ImplementationSpecific"}]}]` | A list of hosts for the Ingress  |
 | ingress.tls | list | `[{"hosts":["chart-example.local"],"secretName":"chart-example-tls"}]` | Ingress TLS configuration  |
 |node| object | `{}` | Deploy a substrate node. ref: https://docs.substrate.io/tutorials/v3/private-network/ |
+| node.archive | bool | `false` | if set, start archiving the node |
 | node.boot.enable | bool | `true` | if set, start bootnode |
 | node.bootnodes | list | `[]` | Parachain peer url list |
 | node.chainData.enable | bool | `true` | if set, create persistante volume claim and use it to store ParaChain data  |
