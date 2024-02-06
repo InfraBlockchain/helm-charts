@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-api
+  labels:
+    {{- include "explorer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "explorer.selectorLabels" . | nindent 6 }}
+      app: {{ .Release.Name }}-api
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "explorer.selectorLabels" . | nindent 8 }}
+        app: {{ .Release.Name }}-api
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "explorer.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: api
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- end }}
+          image: "069134836620.dkr.ecr.ap-northeast-2.amazonaws.com/dev-explorer-api:{{ .Values.image.apiTag | default 3}}"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              {{- if or (eq .Values.reader.config.db.username "root") (eq .Values.reader.config.db.username "admin") }}
+              /usr/src/start-api.sh
+              {{- else }}
+              alembic upgrade head
+              python app/import_assets.py
+              exec uvicorn --host 0.0.0.0 --port 8000 --log-level info "app.main:app" --forwarded-allow-ips='*' --proxy-headers
+              {{- end }}
+          envFrom:
+          {{ if eq .Values.reader.config.enable true}}
+            - secretRef:
+                name: {{ .Release.Name }}-explorer-db-secret
+            - configMapRef:
+                name: {{ .Release.Name }}-explorer-api-config
+            - configMapRef:
+                name: {{ .Release.Name }}-explorer-db-config
+          {{- else}}
+            - secretRef:
+                name: {{.Values.reader.config.secretDBRef}}
+            - configMapRef:
+                name: {{.Values.reader.config.configMapRef}}
+            - configMapRef:
+                name: {{.Values.reader.config.dbConfigMapRef}}
+          {{- end }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.podLifecycle }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.podLifecycle.livenessProbe.path | default "/"}}
+              port: 8000
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.podLifecycle.readinessProbe.path | default "/"}}
+              port: 8000
+          {{- end}}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-polling
+  labels:
+    {{- include "explorer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: polling
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "explorer.selectorLabels" . | nindent 6 }}
+      app: {{ .Release.Name }}-polling
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "explorer.selectorLabels" . | nindent 8 }}
+        app: {{ .Release.Name }}-polling
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "explorer.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: polling
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- end }}
+          image: "069134836620.dkr.ecr.ap-northeast-2.amazonaws.com/dev-explorer-polling:{{ .Values.image.pollingTag | default 6}}"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              python polling.py
+          envFrom:
+            - secretRef:
+                name: {{ .Release.Name }}-explorer-db-secret
+            - configMapRef:
+                name: {{ .Release.Name }}-explorer-api-config
+            - configMapRef:
+                name: {{ .Release.Name }}-explorer-db-config
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.podLifecycle }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.podLifecycle.livenessProbe.path | default "/"}}
+              port: 8000
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.podLifecycle.readinessProbe.path | default "/"}}
+              port: 8000
+          {{- end}}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

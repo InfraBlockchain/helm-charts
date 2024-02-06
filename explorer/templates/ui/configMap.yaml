@@ -1,0 +1,14 @@
+{{- if eq .Values.ui.enable true }}
+{{- if eq .Values.ui.config.generate true }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{.Release.Name }}-ui-config
+  namespace: explorer
+  labels:
+    app: {{.Release.Name }}-ui-config
+data:
+  config.json: |
+   {{ .Values.ui.config.data | nindent 4 }}
+{{- end}}
+{{- end}}
