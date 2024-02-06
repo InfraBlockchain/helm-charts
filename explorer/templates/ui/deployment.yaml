@@ -1,0 +1,75 @@
+{{- if eq .Values.ui.enable true }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.Release.Name }}-ui
+  labels:
+    {{- include "explorer.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.ui.autoscaling.enabled }}
+  replicas: {{ .Values.ui.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "explorer.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.ui.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "explorer.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.ui.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "explorer.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.ui.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.ui.securityContext | nindent 12 }}
+          image: "069134836620.dkr.ecr.ap-northeast-2.amazonaws.com/dev-explorer-ui:{{ .Values.ui.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.ui.image.pullPolicy }}
+          volumeMounts:
+            - name: explorer-ui-config
+              mountPath: /usr/share/nginx/html/assets/config.json
+              subPath: config.json
+          ports:
+            - name: http
+              containerPort: {{ .Values.ui.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.ui.resources | nindent 12 }}
+      {{- with .Values.ui.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.ui.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.ui.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: explorer-ui-config
+          configMap:
+          {{- if eq .Values.ui.config.generate true }}
+            name: {{.Release.Name }}-ui-config
+          {{- else }}
+            name: {{ required "A valid .Values.explorer.configMapRef entry required!"  .Values.ui.configMap.configMapRef }}
+          {{- end }}
+{{- end }}

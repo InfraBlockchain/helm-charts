@@ -1,0 +1,50 @@
+{{- if eq .Values.reader.config.enable true }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-explorer-db-config
+  namespace: explorer
+  labels:
+    app: {{ .Release.Name }}-explorer-db-config
+data:
+  DB_USERNAME: {{.Values.reader.config.db.username}}
+  DB_HOST: {{.Values.reader.config.db.host}}
+  DB_PORT: {{.Values.reader.config.db.port | quote}}
+  DB_HARVESTER_NAME: {{.Values.reader.config.db.harvesterName}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ .Release.Name }}-explorer-api-config
+    labels:
+        app: {{ .Release.Name }}-explorer-api-config
+data:
+    DOMAIN: root
+    SERVER_ADDR: 0.0.0.0
+    SERVER_PORT: "8000"
+    WEBSOCKET_URI: ws://0.0.0.0:8000
+    BACKEND_CORS_ORIGINS: "[]"
+    BROADCAST_URI: {{ default "redis://redis:6379" .Values.reader.config.api.redisUrl  }}
+    CHAIN_ID: {{default "default"  .Values.reader.config.api.nodeId }}
+    BLOCK_LIMIT_COUNT: {{ default "50000" .Values.reader.config.api.blockLimit | quote}}
+    DB_NAME: {{ default "infrablockspace" .Values.reader.config.api.db.name }}
+    SENTRY_PROJECT_NAME: {{default ""  .Values.reader.config.api.sentry.name }}
+    SENTRY_SERVER_NAME: {{ default "" .Values.reader.config.api.sentry.server }}
+    SENTRY_DSN: {{default ""  .Values.reader.config.api.sentry.dsn }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ .Release.Name }}-explorer-harvester-config
+    labels:
+        app: {{ .Release.Name }}-explorer-harvester-config
+data:
+    SUBSTRATE_RPC_URL: {{default "ws://localhost:9944" .Values.reader.config.harvester.substrate.url }}
+    NODE_TYPE: archive
+    SUBSTRATE_SS58_FORMAT: {{ default "42" .Values.reader.config.harvester.substrate.SS58Format | quote}}
+    BLOCK_START: {{ default "0" .Values.reader.config.harvester.blockStart | quote  }}
+    INSTALLED_ETL_DATABASES: {{ default "" .Values.reader.config.harvester.db.InstalledEtl  }}
+    DB_NAME: {{ default "" .Values.reader.config.harvester.db.name }}
+    CUSTOM_TYPE_REGISTRY: |
+        {"types":{"VoteAccountId":"AccountId32","SystemTokenId":{"type":"struct","type_mapping":[["para_id","Compact<u32>"],["pallet_id","Compact<u8>"],["asset_id","Compact<u32>"]]},"runtime_common::pallet_system_token_tx_payment::ChargeSystemToken":{"type":"struct","type_mapping":[["tip","Compact<Balance>"],["system_token_id","Option<SystemTokenId>"],["vote_candidate","Option<VoteAccountId>"]]}}}
+{{- end}}
