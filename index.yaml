@@ -1,5 +1,20 @@
 apiVersion: v1
 entries:
+  explorer:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2024-02-06T14:46:10.714713+09:00"
+    description: A Helm chart for Kubernetes
+    digest: 0b69121aed3e1ad6fda6e0a0636b51ea94ea440f58fd03f70ebb59833eabde61
+    maintainers:
+    - email: devops@bc-labs.net
+      name: InfraBlockchain
+      url: https://github.com/InfraBlockchain/helm-charts/releases/download/infra-explorer-0.1.0/infra-explorer-0.1.0.tgz
+    name: explorer
+    type: application
+    urls:
+    - infra-explorer-0.1.0.tgz
+    version: 0.1.0
   infra-para:
     - apiVersion: v2
       appVersion: 1.16.0
