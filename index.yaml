@@ -33,6 +33,20 @@ entries:
   infrablockspace:
     - apiVersion: v2
       appVersion: 1.16.0
+      created: "2024-02-08T15:15:45.69822+09:00"
+      description: A Helm chart for Kubernetes
+      digest: c444b3e3901b71c4008111a842cfa59bb0b374265c5fcd29a76c7eed76a6565b
+      maintainers:
+        - email: devops@bc-labs.net
+          name: InfraBlockchain
+          url: https://github.com/InfraBlockchain/helm-charts
+      name: infrablockspace
+      type: application
+      urls:
+        - https://github.com/InfraBlockchain/helm-charts/releases/download/infrablockspace-0.1.3/infrablockspace-0.1.3.tgz
+      version: 0.1.3
+    - apiVersion: v2
+      appVersion: 1.16.0
       created: "2024-02-08T14:48:44.007936+09:00"
       description: A Helm chart for Kubernetes
       digest: 6952e5a975003d10a542c9a55f5f1d4a30745b4bcc1f1dba293b5240f74eeb62
