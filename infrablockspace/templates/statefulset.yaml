@@ -76,7 +76,7 @@ spec:
         {{- end}}
       containers:
         - name: infrablockspace
-          image: public.ecr.aws/v8x3j0k5/infrablockspace:{{default "3" .Values.tag | quote}}
+          image: public.ecr.aws/v8x3j0k5/infrablockspace:{{.Values.tag}}
           imagePullPolicy: Always
           args:
             [
