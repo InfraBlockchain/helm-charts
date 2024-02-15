@@ -9,11 +9,11 @@ entries:
     maintainers:
     - email: devops@bc-labs.net
       name: InfraBlockchain
-      url: https://github.com/InfraBlockchain/helm-charts/releases/download/infra-explorer-0.1.0/infra-explorer-0.1.0.tgz
+      url: https://github.com/InfraBlockchain/helm-charts
     name: explorer
     type: application
     urls:
-    - infra-explorer-0.1.0.tgz
+        - https://github.com/InfraBlockchain/helm-charts/releases/download/infra-explorer-0.1.0/infra-explorer-0.1.0.tgz
     version: 0.1.0
   infra-para:
     - apiVersion: v2
