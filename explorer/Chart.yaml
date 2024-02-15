@@ -2,9 +2,9 @@ apiVersion: v2
 appVersion: 1.16.0
 description: A Helm chart for Kubernetes
 maintainers:
-- email: devops@bc-labs.net
-  name: InfraBlockchain
-  url: https://github.com/InfraBlockchain/helm-charts
+  - email: devops@bc-labs.net
+    name: InfraBlockchain
+    url: https://github.com/InfraBlockchain/helm-charts
 name: explorer
 type: application
-version: 0.1.0
+version: 0.1.1
